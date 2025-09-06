@@ -22,48 +22,15 @@ This project follows a **layered architecture** with clear separation of concern
 
 ### 1. **Controllers Layer** (`src/controllers/`)
 - **Purpose**: Handle HTTP requests and responses
-- **Responsibilities**:
-  - Route registration with Flask
-  - Request validation using Marshmallow
-  - Response formatting (JSON)
-  - Error handling and HTTP status codes
-- **Files**:
-  - `trade_controller.py` - Manages trade-related endpoints
-  - `portfolio_controller.py` - Manages portfolio-related endpoints
-  - `pnl_controller.py` - Manages PnL calculation endpoints
 
 ### 2. **Managers Layer** (`src/managers/`)
 - **Purpose**: Orchestrate business logic between multiple services
-- **Responsibilities**:
-  - Coordinate operations across different services
-  - Handle complex business workflows
-  - Manage transactions and data consistency
-- **Files**:
-  - `trade_manager.py` - Orchestrates trade processing
-  - `portfolio_manager.py` - Manages portfolio operations
-  - `pnl_manager.py` - Handles PnL calculations
 
 ### 3. **Services Layer** (`src/services/`)
 - **Purpose**: Implement core business logic
-- **Responsibilities**:
-  - Data manipulation and storage
-  - Business rule implementation
-  - External API integrations
-- **Files**:
-  - `trade_service.py` - Trade data management
-  - `portfolio_service.py` - Portfolio calculations and updates
-  - `price_service.py` - Price data management
-  - `pnl_service.py` - PnL calculation logic
 
 ### 4. **Models Layer** (`src/models/`)
 - **Purpose**: Define data entities and structures
-- **Responsibilities**:
-  - Data validation
-  - Entity relationships
-  - Business object representation
-- **Files**:
-  - `trade.py` - Trade entity definition
-  - `portfolio.py` - Portfolio entity definition
 
 ## Entities and Data Flow
 
@@ -102,10 +69,7 @@ CombinedPnLDto {
 ```
 
 ### Data Flow Example
-1. **Trade Creation**: `POST /trades` → Controller → Manager → Service → Model
-2. **Portfolio Update**: Trade Service → Portfolio Service (handles buy/sell logic)
-3. **Portfolio Retrieval**: `GET /portfolio` → Controller → Manager → Service
-4. **PnL Calculation**: `GET /pnl` → Controller → Manager → Services (Portfolio + Price + Trade)
+**PnL Calculation**: `GET /pnl` → Controller → Manager → Services (Portfolio + Price + Trade)
 
 ## Getting Started
 
@@ -146,173 +110,24 @@ CombinedPnLDto {
 
    The server will start on `http://127.0.0.1:8000`
 
-### Production Deployment
-```bash
-# Using Gunicorn (recommended for production)
-gunicorn main:app --bind 0.0.0.0:8000
-```
 
 ## API Endpoints
 
 ### 1. Add Trade
-**Endpoint**: `POST /trades`
-
-**Description**: Record a new trade transaction
-
-**Request Body**:
-```json
-{
-    "symbol": "BTC",
-    "side": "buy",
-    "price": 50000.0,
-    "quantity": 0.1
-}
-```
-
-**Response** (201 Created):
-```json
-{
-    "message": "Trade added successfully",
-    "trade": {
-        "id": "trade_20241201_143022_123456",
-        "symbol": "BTC",
-        "side": "buy",
-        "price": 50000.0,
-        "quantity": 0.1,
-        "timestamp": "2024-12-01T14:30:22.123456"
-    }
-}
-```
-
-**cURL Example**:
 ```bash
 curl -X POST http://127.0.0.1:8000/trades \
   -H "Content-Type: application/json" \
-  -d '{
-    "symbol": "BTC",
-    "side": "buy",
-    "price": 50000.0,
-    "quantity": 0.1
-  }'
+  -d '{"symbol": "BTC", "side": "buy", "price": 50000.0, "quantity": 0.1}'
 ```
 
-### 2. Get All Trades
-**Endpoint**: `GET /trades`
-
-**Description**: Retrieve all recorded trades
-
-**Response** (200 OK):
-```json
-{
-    "trades": [
-        {
-            "id": "trade_20241201_143022_123456",
-            "symbol": "BTC",
-            "side": "buy",
-            "price": 50000.0,
-            "quantity": 0.1,
-            "timestamp": "2024-12-01T14:30:22.123456"
-        }
-    ],
-    "count": 1
-}
-```
-
-**cURL Example**:
-```bash
-curl -X GET http://127.0.0.1:8000/trades
-```
-
-### 3. Get Portfolio Holdings
-**Endpoint**: `GET /portfolio`
-
-**Description**: Retrieve current portfolio holdings with average prices
-
-**Response** (200 OK):
-```json
-{
-    "portfolio": [
-        {
-            "symbol": "BTC",
-            "quantity": 0.15,
-            "average_price": 50666.67
-        },
-        {
-            "symbol": "ETH",
-            "quantity": 2.0,
-            "average_price": 3000.0
-        }
-    ],
-    "count": 2
-}
-```
-
-**cURL Example**:
+### 2. Get Portfolio
 ```bash
 curl -X GET http://127.0.0.1:8000/portfolio
 ```
 
-### 4. Get Complete PnL (Unrealized + Realized)
-**Endpoint**: `GET /pnl`
-
-**Description**: Calculate and retrieve complete profit/loss including both unrealized and realized PnL for all portfolio holdings
-
-**Response** (200 OK):
-```json
-{
-    "pnl": [
-        {
-            "symbol": "BTC",
-            "quantity": 0.15,
-            "average_price": 50666.67,
-            "current_price": 55000.0,
-            "unrealized_pnl": 650.0,
-            "realized_pnl": 1200.0,
-            "total_pnl": 1850.0
-        },
-        {
-            "symbol": "ETH",
-            "quantity": 2.0,
-            "average_price": 3000.0,
-            "current_price": 3200.0,
-            "unrealized_pnl": 400.0,
-            "realized_pnl": 0.0,
-            "total_pnl": 400.0
-        }
-    ],
-    "total_unrealized_pnl": 1050.0,
-    "total_realized_pnl": 1200.0,
-    "total_pnl": 2250.0,
-    "count": 2
-}
-```
-
-**cURL Example**:
+### 3. Get PnL
 ```bash
 curl -X GET http://127.0.0.1:8000/pnl
-```
-
-### 5. Get PnL for Single Symbol
-**Endpoint**: `GET /pnl/{symbol}`
-
-**Description**: Get PnL information for a specific cryptocurrency
-
-**Response** (200 OK):
-```json
-{
-    "symbol": "BTC",
-    "quantity": 0.15,
-    "average_price": 50666.67,
-    "current_price": 55000.0,
-    "unrealized_pnl": 650.0,
-    "realized_pnl": 1200.0,
-    "total_pnl": 1850.0
-}
-```
-
-**cURL Example**:
-```bash
-curl -X GET http://127.0.0.1:8000/pnl/BTC
 ```
 
 ## Testing the API
@@ -418,17 +233,6 @@ After running the complete test flow, you should see:
 - Sell Trades: Reduce quantity, remove if zero, preserve average price
 - PnL Calculation: Realized PnL = (sell_price - avg_price) × quantity
 - Portfolio Updates: Automatic on every trade transaction
-
-## Dependencies
-
-- Flask 2.3.3 - Web framework for API endpoints
-- marshmallow 3.20.1 - Request/response validation and serialization
-- pytest 7.4.3 - Testing framework
-- pytest-flask 1.3.0 - Flask-specific testing utilities
-- ruff 0.1.6 - Python linter and formatter
-- gunicorn 21.2.0 - Production WSGI server
-- python-dotenv 1.0.0 - Environment variable management
-- python-dateutil 2.8.2 - Date/time utilities
 
 ## Development
 
