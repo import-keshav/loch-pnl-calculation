@@ -23,12 +23,10 @@ class TestPortfolioEndpoints:
             "quantity": 0.1
         }
         
-        # Add trade
         client.post('/trades',
                    data=json.dumps(trade_data),
                    content_type='application/json')
         
-        # Check portfolio
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -48,13 +46,11 @@ class TestPortfolioEndpoints:
             {"symbol": "BTC", "side": "buy", "price": 52000.0, "quantity": 0.1}
         ]
         
-        # Add trades
         for trade in trades:
             client.post('/trades',
                        data=json.dumps(trade),
                        content_type='application/json')
         
-        # Check portfolio
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -65,7 +61,6 @@ class TestPortfolioEndpoints:
         btc_holding = data['portfolio'][0]
         assert btc_holding['symbol'] == 'BTC'
         assert btc_holding['quantity'] == 0.2
-        # Weighted average: (50000 * 0.1 + 52000 * 0.1) / 0.2 = 51000
         assert btc_holding['average_price'] == 51000.0
 
     def test_get_portfolio_multiple_symbols(self, client):
@@ -76,13 +71,11 @@ class TestPortfolioEndpoints:
             {"symbol": "SOL", "side": "buy", "price": 100.0, "quantity": 10.0}
         ]
         
-        # Add trades
         for trade in trades:
             client.post('/trades',
                        data=json.dumps(trade),
                        content_type='application/json')
         
-        # Check portfolio
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -90,7 +83,6 @@ class TestPortfolioEndpoints:
         assert len(data['portfolio']) == 3
         assert data['count'] == 3
         
-        # Verify each holding
         symbols = {holding['symbol']: holding for holding in data['portfolio']}
         
         assert symbols['BTC']['quantity'] == 0.1
@@ -109,13 +101,11 @@ class TestPortfolioEndpoints:
             {"symbol": "BTC", "side": "sell", "price": 55000.0, "quantity": 0.1}
         ]
         
-        # Add trades
         for trade in trades:
             client.post('/trades',
                        data=json.dumps(trade),
                        content_type='application/json')
         
-        # Check portfolio
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -125,8 +115,8 @@ class TestPortfolioEndpoints:
         
         btc_holding = data['portfolio'][0]
         assert btc_holding['symbol'] == 'BTC'
-        assert btc_holding['quantity'] == 0.1  # 0.2 - 0.1
-        assert btc_holding['average_price'] == 50000.0  # Unchanged on sell
+        assert btc_holding['quantity'] == 0.1
+        assert btc_holding['average_price'] == 50000.0
 
     def test_get_portfolio_sell_all_holdings(self, client):
         """Test portfolio after selling all holdings"""
@@ -135,13 +125,11 @@ class TestPortfolioEndpoints:
             {"symbol": "BTC", "side": "sell", "price": 55000.0, "quantity": 0.1}
         ]
         
-        # Add trades
         for trade in trades:
             client.post('/trades',
                        data=json.dumps(trade),
                        content_type='application/json')
         
-        # Check portfolio (should be empty)
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -159,13 +147,11 @@ class TestPortfolioEndpoints:
             {"symbol": "ETH", "side": "buy", "price": 3200.0, "quantity": 1.0}
         ]
         
-        # Add trades
         for trade in trades:
             client.post('/trades',
                        data=json.dumps(trade),
                        content_type='application/json')
         
-        # Check portfolio
         response = client.get('/portfolio')
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -175,12 +161,8 @@ class TestPortfolioEndpoints:
         
         symbols = {holding['symbol']: holding for holding in data['portfolio']}
         
-        # BTC: bought 0.3 total, sold 0.15, remaining 0.15
-        # Average: (45000 * 0.2 + 55000 * 0.1) / 0.3 = 48333.33
         assert abs(symbols['BTC']['quantity'] - 0.15) < 0.0001
         assert abs(symbols['BTC']['average_price'] - 48333.33) < 0.01
         
-        # ETH: bought 4.0 total
-        # Average: (2800 * 3.0 + 3200 * 1.0) / 4.0 = 2900.0
         assert symbols['ETH']['quantity'] == 4.0
         assert symbols['ETH']['average_price'] == 2900.0

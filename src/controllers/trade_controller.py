@@ -5,11 +5,23 @@ from src.managers.trade_manager import TradeManager
 from src.models.trade import Trade
 
 
+def validate_price(value):
+    if value <= 0:
+        raise ValidationError(f"Price must be greater than 0, got {value}")
+
+def validate_quantity(value):
+    if value <= 0:
+        raise ValidationError(f"Quantity must be greater than 0, got {value}")
+
+def validate_side(value):
+    if value.lower() not in ['buy', 'sell']:
+        raise ValidationError(f"Side must be 'buy' or 'sell', got '{value}'")
+
 class TradeSchema(Schema):
     symbol = fields.Str(required=True)
-    side = fields.Str(required=True, validate=lambda x: x.lower() in ['buy', 'sell'])
-    price = fields.Float(required=True, validate=lambda x: x > 0)
-    quantity = fields.Float(required=True, validate=lambda x: x > 0)
+    side = fields.Str(required=True, validate=validate_side)
+    price = fields.Float(required=True, validate=validate_price)
+    quantity = fields.Float(required=True, validate=validate_quantity)
 
 
 class TradeController:
@@ -24,7 +36,6 @@ class TradeController:
         @app.route('/trades', methods=['POST'])
         def add_trade_endpoint():
             try:
-                # Check if request has valid JSON
                 try:
                     json_data = request.get_json(force=True)
                 except Exception:

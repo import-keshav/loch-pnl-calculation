@@ -27,28 +27,42 @@ class PnLManager:
         )
 
     def _calculate_realized_pnl_for_symbol(self, symbol: str) -> RealizedPnLDto:
-        try:
-            coin_data = self.portfolio_service.get_coin_data(symbol)
-            average_price = coin_data["average_price"]
-            sell_trades = self.trade_service.get_trades_by_symbol_and_side(symbol, "sell")
-            
-            total_realized_pnl = 0
-            
-            for trade in sell_trades:
-                trade_pnl = (trade.price - average_price) * trade.quantity
-                total_realized_pnl += trade_pnl
-            
-            return RealizedPnLDto(
-                symbol=symbol,
-                total_realized_pnl=round(total_realized_pnl, 2)
-            )
-            
-        except ValueError:
+        all_trades = self.trade_service.get_trades_by_symbol_and_side(symbol)
+        
+        if not all_trades:
             return RealizedPnLDto(
                 symbol=symbol,
                 total_realized_pnl=0.0,
-                note="No portfolio data available for this symbol"
+                note="No trades found for this symbol"
             )
+        
+        sorted_trades = sorted(all_trades, key=lambda t: t.timestamp)
+        
+        total_realized_pnl = 0
+        running_quantity = 0
+        running_total_cost = 0
+        
+        for trade in sorted_trades:
+            if trade.side.lower() == "buy":
+                running_total_cost += trade.price * trade.quantity
+                running_quantity += trade.quantity
+                
+            elif trade.side.lower() == "sell":
+                if running_quantity > 0:
+                    current_avg_price = running_total_cost / running_quantity
+                    trade_pnl = (trade.price - current_avg_price) * trade.quantity
+                    total_realized_pnl += trade_pnl
+                    
+                    running_quantity -= trade.quantity
+                    if running_quantity > 0:
+                        running_total_cost = current_avg_price * running_quantity
+                    else:
+                        running_total_cost = 0
+        
+        return RealizedPnLDto(
+            symbol=symbol,
+            total_realized_pnl=round(total_realized_pnl, 2)
+        )
 
     def get_pnl(self) -> PnLSummaryDto:
         holdings = self.portfolio_service.get_holdings()

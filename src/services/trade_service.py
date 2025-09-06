@@ -12,7 +12,6 @@ class TradeService:
         return self.trades
 
     def get_trades_by_symbol_and_side(self, symbol: str, side: Optional[str] = None) -> List[Trade]:
-        """Generic function to get trades filtered by symbol and optionally by side"""
         filtered_trades = []
         
         for trade in self.trades:
